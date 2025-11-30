@@ -8,7 +8,8 @@ function authRequired(req, res, next) {
 
   try {
     const payload = jwt.verify(token, JWT_SECRET);
-    req.user = payload; // { id, role, email }
+    // payload = { id, role, email } from your login/signup
+    req.user = payload;
     next();
   } catch {
     return res.status(401).json({ error: 'invalid token' });

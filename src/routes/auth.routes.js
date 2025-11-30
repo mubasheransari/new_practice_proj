@@ -16,13 +16,12 @@ router.post('/signup', (req, res) => {
     password,
     residentialAddress,
     phoneNumber,
-    city,
+    city
   } = req.body || {};
 
-  // ✅ basic validation
   if (!firstName || !email || !password || !residentialAddress || !phoneNumber || !city) {
     return res.status(400).json({
-      error: 'firstName, email, password, residentialAddress, phoneNumber, city required',
+      error: 'firstName, email, password, residentialAddress, phoneNumber, city required'
     });
   }
 
@@ -69,7 +68,8 @@ router.post('/signup', (req, res) => {
 // POST /api/auth/login
 router.post('/login', (req, res) => {
   const { email, password } = req.body || {};
-  if (!email || !password) return res.status(400).json({ error: 'email & password required' });
+  if (!email || !password)
+    return res.status(400).json({ error: 'email & password required' });
 
   const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
   if (!user) return res.status(401).json({ error: 'invalid credentials' });
@@ -82,30 +82,26 @@ router.post('/login', (req, res) => {
     JWT_SECRET,
     { expiresIn: '7d' }
   );
+
   res.json({ token });
 });
 
 // GET /api/auth/me
 router.get('/me', authRequired, (req, res) => {
   const u = db.prepare(`
-    SELECT
-      id,
-      firstName,
-      lastName,
-      email,
-      role,
-      residentialAddress,
-      phoneNumber,
-      city,
+    SELECT 
+      id, firstName, lastName, email, role,
+      residentialAddress, phoneNumber, city,
       createdAt
     FROM users
-    WHERE id = ?
+    WHERE id=?
   `).get(req.user.id);
 
   res.json(u);
 });
 
 module.exports = router;
+
 
 
 
