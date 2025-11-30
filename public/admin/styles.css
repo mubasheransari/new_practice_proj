@@ -1,0 +1,81 @@
+:root{
+  --bg:#0b1020;      /* dark brand */
+  --card:#121833;
+  --muted:#9aa4bf;
+  --txt:#e6edf3;
+  --primary:#6366f1;
+  --success:#22c55e;
+  --danger:#ef4444;
+  --border:#1f2647;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:linear-gradient(180deg,#0b1020,#12142c 50%,#0b1020);
+  color:var(--txt); font:16px system-ui,Segoe UI,Roboto,Helvetica,Arial;
+}
+
+.app{
+  max-width:1200px; margin:28px auto; padding:0 16px;
+}
+
+.nav{
+  display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;
+}
+.nav a, .nav button{
+  text-decoration:none; color:var(--txt);
+  background:var(--card); border:1px solid var(--border);
+  padding:10px 14px; border-radius:10px; cursor:pointer;
+}
+.nav a.active{outline:2px solid var(--primary)}
+.nav .right{margin-left:auto}
+
+.card{
+  background:var(--card); border:1px solid var(--border);
+  border-radius:14px; padding:16px; margin-bottom:16px;
+}
+
+h1{font-size:22px;margin:0 0 12px}
+h2{font-size:18px;margin:0 0 10px;color:#c9d4ff}
+
+.row{display:flex; gap:12px; flex-wrap:wrap}
+.col{flex:1 1 260px}
+
+input,select,button,textarea{
+  background:#0f1630; color:var(--txt); border:1px solid var(--border);
+  border-radius:10px; padding:10px 12px; font-size:15px; width:100%;
+}
+button.primary{background:var(--primary); border:none}
+button.success{background:var(--success); border:none}
+button.danger{background:var(--danger); border:none}
+button:disabled{opacity:.6; cursor:not-allowed}
+
+.table{
+  width:100%; border-collapse:collapse; font-size:14px;
+}
+.table th,.table td{
+  border-bottom:1px solid var(--border); padding:10px; text-align:left;
+}
+.table th{color:#c9d4ff; font-weight:700}
+
+.kpi{
+  display:grid; grid-template-columns:repeat(4,minmax(160px,1fr)); gap:12px;
+}
+.kpi .box{
+  background:#0f1630; border:1px solid var(--border);
+  border-radius:12px; padding:14px;
+}
+.kpi .val{font-size:22px; font-weight:800}
+.kpi .lbl{color:var(--muted); font-size:12px}
+
+.center{display:flex; justify-content:center; align-items:center}
+.login-card{max-width:420px; margin:60px auto}
+
+.toast{
+  position:fixed; left:50%; transform:translateX(-50%);
+  bottom:24px; background:#1b213f; color:var(--txt);
+  border:1px solid var(--border); padding:10px 14px; border-radius:10px;
+  opacity:0; pointer-events:none; transition:opacity .2s;
+}
+.toast.show{opacity:1}
