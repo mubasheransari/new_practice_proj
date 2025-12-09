@@ -20,6 +20,7 @@ app.get('/health', (_, res) => res.json({ ok: true }));
 // APIs
 app.use('/api/auth',       require('./routes/auth.routes'));
 app.use('/api/points',     require('./routes/points.routes'));
+app.use('/api/profile', require('./routes/profile.routes'));
 
 // ---- Admin Panel (static SPA) ----
 
