@@ -5,25 +5,45 @@ const { authRequired } = require('../middleware/auth');
 
 const router = express.Router();
 
+// ✅ Every user starts with 50 points by default
+const BASE_POINTS = 50;
+
+// ------------------------ helpers ------------------------
+function getDbPointsTotal(dbUserId) {
+  const row = db
+    .prepare('SELECT COALESCE(SUM(points), 0) AS totalPoints FROM user_points WHERE userId = ?')
+    .get(dbUserId);
+
+  return Number(row?.totalPoints || 0);
+}
+
+function getEffectiveBalance(dbUserId) {
+  return BASE_POINTS + getDbPointsTotal(dbUserId);
+}
+
+// ------------------------ SEND POINTS ------------------------
 /**
  * POST /api/points/send
  * Body: { points: number, uid: string }
  *
  * - Sender = current logged-in user (from JWT)
  * - uid = receiver's userCode (8-char visible user id)
+ * - default BASE_POINTS is included in balances
+ * - all points are transferable
  */
 router.post('/send', authRequired, (req, res) => {
   try {
     const { points, uid } = req.body || {};
-    const senderDbId = req.user.id;        // numeric DB id from token
-    const senderCode = req.user.userCode;  // 8-char visible ID from token
 
-    // --- basic validation ---
+    const senderDbId = req.user.id;        // numeric DB id
+    const senderCode = req.user.userCode;  // 8-char visible ID
+
+    // --- validation ---
     if (!Number.isInteger(points) || points <= 0) {
       return res.status(400).json({ error: 'points must be a positive integer' });
     }
 
-    if (!uid || typeof uid !== 'string') {
+    if (!uid || typeof uid !== 'string' || !uid.trim()) {
       return res.status(400).json({ error: 'uid (receiver userId) is required' });
     }
 
@@ -39,20 +59,19 @@ router.post('/send', authRequired, (req, res) => {
     const receiverDbId = receiver.id;
     const receiverCode = receiver.userCode;
 
-    // optional rule: cannot send to self
+    // cannot send to self
     if (receiverDbId === senderDbId) {
       return res.status(400).json({ error: 'cannot send points to yourself' });
     }
 
-    // --- check sender balance ---
-    const senderBalanceRow = db
-      .prepare('SELECT COALESCE(SUM(points), 0) AS totalPoints FROM user_points WHERE userId = ?')
-      .get(senderDbId);
+    // --- check sender balance (includes default 50) ---
+    const senderBalanceBefore = getEffectiveBalance(senderDbId);
 
-    const senderBalance = senderBalanceRow.totalPoints;
-
-    if (senderBalance < points) {
-      return res.status(400).json({ error: 'insufficient points' });
+    if (senderBalanceBefore < points) {
+      return res.status(400).json({
+        error: 'insufficient points',
+        senderBalance: senderBalanceBefore
+      });
     }
 
     // --- transaction: move points from sender -> receiver ---
@@ -82,21 +101,16 @@ router.post('/send', authRequired, (req, res) => {
 
     transferTx();
 
-    // --- new balances after transfer ---
-    const senderAfterRow = db
-      .prepare('SELECT COALESCE(SUM(points), 0) AS totalPoints FROM user_points WHERE userId = ?')
-      .get(senderDbId);
-
-    const receiverAfterRow = db
-      .prepare('SELECT COALESCE(SUM(points), 0) AS totalPoints FROM user_points WHERE userId = ?')
-      .get(receiverDbId);
+    // --- balances after transfer (includes default 50) ---
+    const senderBalanceAfter = getEffectiveBalance(senderDbId);
+    const receiverBalanceAfter = getEffectiveBalance(receiverDbId);
 
     return res.status(201).json({
-      fromUserId: senderCode,                 // visible sender id (8-char)
-      toUserId: receiverCode,                 // visible receiver id (8-char)
+      fromUserId: senderCode,        // sender visible 8-char id
+      toUserId: receiverCode,        // receiver visible 8-char id
       points,
-      senderBalanceAfter: senderAfterRow.totalPoints,
-      receiverBalanceAfter: receiverAfterRow.totalPoints
+      senderBalanceAfter,
+      receiverBalanceAfter
     });
   } catch (err) {
     console.error('[points.send] error:', err);
@@ -104,18 +118,19 @@ router.post('/send', authRequired, (req, res) => {
   }
 });
 
+// ------------------------ GET POINTS ------------------------
 /**
  * GET /api/points
  * - returns current user's own total + history
+ * - totalPoints includes default 50
  */
 router.get('/', authRequired, (req, res) => {
   try {
     const dbUserId = req.user.id;
-    const userCode = req.user.userCode; // 8-char visible id
+    const userCode = req.user.userCode;
 
-    const totalRow = db
-      .prepare('SELECT COALESCE(SUM(points), 0) AS totalPoints FROM user_points WHERE userId = ?')
-      .get(dbUserId);
+    const dbTotal = getDbPointsTotal(dbUserId);
+    const totalPoints = BASE_POINTS + dbTotal;
 
     const history = db.prepare(`
       SELECT id, points, reason, createdAt
@@ -125,8 +140,8 @@ router.get('/', authRequired, (req, res) => {
     `).all(dbUserId);
 
     return res.json({
-      userId: userCode,
-      totalPoints: totalRow.totalPoints,
+      userId: userCode,     // 8-char visible id
+      totalPoints,          // includes default 50
       history
     });
   } catch (err) {
@@ -136,4 +151,3 @@ router.get('/', authRequired, (req, res) => {
 });
 
 module.exports = router;
-
