@@ -9,6 +9,7 @@ const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-change-me';
 
 // POST /api/auth/signup
+//i want to insert random numbers through post api and i generate qr code in against of these numbers on paper and i want to scan throgh mobile app and if the scan sucessful then user gets points in against of these successful QR scan. and if the qr already scan by some user then it is unable to scan again. one qr able to scan 1 time only.
 router.post('/signup', (req, res) => {
   const {
     firstName,
